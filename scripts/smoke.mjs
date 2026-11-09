@@ -55,7 +55,9 @@ try {
   const workPromise = app.waitForEvent('window');
   await widget.getByRole('button', { name: '打开工作计划', exact: true }).click();
   const work = await workPromise;
-  await work.locator('#work-form-title').click();
+  // An empty work-plan list opens the composer after its initial data load.
+  // Clicking its summary here would close it before we can enter a title.
+  await work.locator('.work-composer[open]').waitFor();
   await work.getByLabel('工作名称', { exact: true }).fill('Mac 验收：保留工作计划');
   await work.getByRole('button', { name: '新增计划', exact: true }).click();
   await work.getByText('Mac 验收：保留工作计划', { exact: true }).waitFor();
@@ -134,6 +136,17 @@ try {
   assert.deepEqual(errors, []);
   await writeFile('test-results/smoke.json', JSON.stringify({ platform: process.platform, checks, pageErrors: errors }, null, 2));
   console.log(`PASS (${process.platform}): ${checks.join('; ')}`);
+} catch (error) {
+  await writeFile('test-results/smoke-failure.json', JSON.stringify({
+    platform: process.platform, checks, pageErrors: errors,
+    error: error instanceof Error ? error.stack : String(error)
+  }, null, 2));
+  if (app) {
+    for (const [index, page] of app.windows().entries()) {
+      await page.screenshot({ path: `test-results/failure-${index}.png` }).catch(() => {});
+    }
+  }
+  throw error;
 } finally {
   if (app) await app.close();
   await rm(dir, { recursive: true, force: true });
