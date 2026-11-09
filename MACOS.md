@@ -57,6 +57,8 @@ npm run dist:mac -- --config.mac.identity=- --config.mac.entitlements=build/enti
 
 `release/` 会得到两个架构的 DMG 和 ZIP。`test:smoke` 需要有登录桌面的 Mac，会使用独立临时数据目录，不触碰真实工作计划。
 
+自动测试核对原生菜单的快捷键注册，并执行实际菜单命令打开设置。Playwright 的页面按键事件不能用来证明 macOS 原生菜单的物理按键派发已通过；⌘ , / ⌘ W 等实际快捷键仍需在 Mac 上手动验收。
+
 仓库附带 `.github/workflows/build-desktop.yml`。推送 `main` / `feature/**` 后，**Build Windows and macOS** 同时在 Windows x64、Mac arm64 和 Mac Intel 原生 runner 上运行类型检查、核心测试、桌面冒烟测试与打包；Mac 另执行 `codesign --verify --deep --strict`。版本标签会在三个目标全部通过后创建统一 Release 草稿，具体见 [RELEASING.md](RELEASING.md)。工作流配置存在不等于远程构建已通过，应以 Actions 实际结果为准。
 
 正式发行需使用自己的 Apple Developer ID 证书并配置 Apple 公证。正式签名使用 `build/entitlements.mac.plist`；ad-hoc 测试签名才使用允许加载无 Team ID 库的 `build/entitlements.adhoc.plist`。没有证书与公证的测试包不能宣称为系统已信任的正式版本。

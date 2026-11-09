@@ -118,11 +118,20 @@ try {
     assert.equal(native.dockVisible, true);
     assert.equal(native.templateIcon, true);
     assert.match(native.trayTitle, /\d+:\d{2}/);
-    await widget.keyboard.press('Meta+,');
+    // Playwright keyboard events target Chromium, not the macOS native menu.
+    // Check the registered accelerator and execute its real menu command;
+    // physical Command-key dispatch remains part of manual Mac acceptance.
+    await app.evaluate(({ Menu }) => {
+      const items = Menu.getApplicationMenu()?.items.flatMap(item => item.submenu?.items ?? []) ?? [];
+      const settingsItem = items.find(item => item.label === '设置…');
+      if (settingsItem?.accelerator !== 'Command+,') throw new Error('Settings accelerator is not registered');
+      if (!items.some(item => item.role === 'close')) throw new Error('Native close menu item is missing');
+      settingsItem.click();
+    });
     const settings = await pageFor('settings');
     await settings.getByRole('button', { name: '关闭设置', exact: true }).waitFor();
-    await settings.keyboard.press('Meta+w');
-    checks.push('macOS template icon / Spaces / menu title / Command shortcuts');
+    await settings.getByRole('button', { name: '关闭设置', exact: true }).click();
+    checks.push('macOS template icon / Spaces / menu title / accelerator registration and menu command');
   }
   const beforeRestart = (await hook('state')).focus.remainingMs;
   await app.close(); app = undefined;
