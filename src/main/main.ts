@@ -377,7 +377,7 @@ if (gotLock) void app.whenReady().then(async () => {
     advance: (ms: number) => { engine.advance(ms, Date.now()); lastTick = performance.now(); publish(); return state(); },
     pauseSystem: (reason: string, value: boolean) => { engine.setSystemPaused(reason, value); lastTick = performance.now(); publish(); return state(); },
     hide: () => widget.hide(), show: showWidget,
-    windowState: () => ({ widgetVisible: widget.isVisible(), alwaysOnTop: widget.isAlwaysOnTop(), bounds: widget.getBounds(), settingsVisible: !!settingsReady && !!settingsWindow?.isVisible(), reminderVisible: !!reminderReady && !!reminder?.isVisible(), allWorkspaces: widget.isVisibleOnAllWorkspaces(), dockVisible: isMac ? app.dock?.isVisible() : null, trayTitle: isMac ? tray?.getTitle() : null, templateIcon: icon.isTemplateImage() })
+    windowState: () => ({ widgetVisible: widget.isVisible(), alwaysOnTop: widget.isAlwaysOnTop(), bounds: widget.getBounds(), settingsVisible: !!settingsReady && !!settingsWindow && !settingsWindow.isDestroyed() && settingsWindow.isVisible(), reminderVisible: !!reminderReady && !!reminder && !reminder.isDestroyed() && reminder.isVisible(), allWorkspaces: widget.isVisibleOnAllWorkspaces(), dockVisible: isMac ? app.dock?.isVisible() : null, trayTitle: isMac ? tray?.getTitle() : null, templateIcon: icon.isTemplateImage() })
   };
 }).catch(error => { console.error(error); app.exit(1); });
 
