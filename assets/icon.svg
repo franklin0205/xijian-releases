@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>息间</title>
+  <rect x="40" y="40" width="944" height="944" rx="220" fill="#292524"/>
+  <path d="M772 544A260 260 0 1 1 512 284" fill="none" stroke="#FDFCF8" stroke-width="72" stroke-linecap="round"/>
+  <rect x="408" y="440" width="64" height="208" rx="32" fill="#FFB7B2"/>
+  <rect x="552" y="440" width="64" height="208" rx="32" fill="#FFB7B2"/>
+  <path d="M620 416C606 329 669 249 804 244C803 374 735 437 620 416Z" fill="#FFB7B2"/>
+</svg>

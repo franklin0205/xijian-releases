@@ -1,0 +1,55 @@
+{
+  "name": "xijian",
+  "productName": "息间",
+  "version": "0.3.2-rc.1",
+  "description": "定制每个人的健康工作：桌面番茄钟与健康提醒",
+  "author": "息间",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "dist/main.cjs",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check:version": "node scripts/check-version.mjs",
+    "test:smoke": "npm run build && node scripts/smoke.mjs",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --arm64 --x64 --publish never",
+    "pack:mac": "npm run build && electron-builder --mac --dir --arm64 --x64 --publish never",
+    "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": { "electron-updater": "6.8.11" },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "43.3.0",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "playwright": "1.65.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3"
+  },
+  "build": {
+    "appId": "com.xijian.desktop",
+    "productName": "息间",
+    "asar": true,
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["dist/**/*", "assets/**/*", "package.json", "!dist/**/*.map", "!assets/**/*.svg"],
+    "electronLanguages": ["en-US", "zh-CN"],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "minimumSystemVersion": "12.0.0",
+      "artifactName": "Xijian-${version}-mac-${arch}.${ext}",
+      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }, { "target": "zip", "arch": ["arm64", "x64"] }],
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": { "NSHumanReadableCopyright": "息间", "CFBundleDevelopmentRegion": "zh_CN" }
+    },
+    "dmg": { "title": "息间 ${version}", "contents": [{ "x": 130, "y": 190 }, { "x": 410, "y": 190, "type": "link", "path": "/Applications" }] },
+    "win": { "icon": "assets/icon.ico", "target": ["nsis"], "artifactName": "Xijian-Setup-${version}-${arch}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "publish": [{ "provider": "github", "owner": "franklin0205", "repo": "xijian-releases", "releaseType": "draft" }]
+  }
+}

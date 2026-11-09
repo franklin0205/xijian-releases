@@ -1,0 +1,118 @@
+name: Build Windows and macOS
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            arch: x64
+          - os: macos-15
+            platform: macos
+            arch: arm64
+          - os: macos-15-intel
+            platform: macos
+            arch: x64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Check version and release tag
+        run: node scripts/check-version.mjs
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:smoke
+      - name: Package Windows
+        if: matrix.platform == 'windows'
+        run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Package macOS with ad-hoc signature
+        if: matrix.platform == 'macos'
+        run: npx --no-install electron-builder --mac dmg zip --${{ matrix.arch }} --publish never --config.mac.identity=- --config.mac.entitlements=build/entitlements.adhoc.plist --config.mac.entitlementsInherit=build/entitlements.adhoc.plist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verify macOS app signature
+        if: matrix.platform == 'macos'
+        run: |
+          shopt -s nullglob
+          apps=(release/mac*/息间.app)
+          test "${#apps[@]}" -eq 1
+          codesign --verify --deep --strict --verbose=2 "${apps[0]}"
+      - name: Collect distributable files
+        run: node scripts/collect-packages.mjs ${{ matrix.platform }} ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Xijian-${{ matrix.platform }}-${{ matrix.arch }}
+          path: release/artifacts/*
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-${{ matrix.platform }}-${{ matrix.arch }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  release:
+    name: Prepare one release for all platforms
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Xijian-*
+          path: release/artifacts
+          merge-multiple: true
+      - name: Validate complete release and create checksums
+        run: node scripts/collect-packages.mjs release
+      - name: Create or update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json isDraft > release-state.json; then
+            node -e "if (!require('./release-state.json').isDraft) throw new Error('Refusing to modify an already published release')"
+            gh release upload "$RELEASE_TAG" release/artifacts/* --clobber
+          else
+            prerelease=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then prerelease=(--prerelease); fi
+            gh release create "$RELEASE_TAG" release/artifacts/* --verify-tag --draft "${prerelease[@]}" --title "息间 $RELEASE_TAG · Windows & macOS" --notes-file .github/RELEASE_NOTES.md
+          fi
