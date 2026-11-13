@@ -1,0 +1,94 @@
+{
+  "name": "xijian",
+  "productName": "息间",
+  "version": "0.5.1",
+  "description": "定制每个人的健康工作：桌面番茄钟与健康提醒",
+  "author": "息间",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "setup": "node scripts/setup-electron.mjs",
+    "postinstall": "node scripts/setup-electron.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "test:desktop": "npm run build && node scripts/desktop-test.mjs",
+    "pack": "npm run build && electron-builder --dir",
+    "dist:win": "npm run build && node scripts/build-windows.mjs",
+    "dist:portable": "npm run build && node scripts/build-windows.mjs --portable",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --publish never"
+  },
+  "devDependencies": {
+    "@fontsource-variable/outfit": "^5.2.0",
+    "@types/node": "^24.0.0",
+    "electron": "43.3.0",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.64.1",
+    "typescript": "7.0.2"
+  },
+  "build": {
+    "appId": "com.xijian.desktop",
+    "productName": "息间",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "publish": {
+      "provider": "github",
+      "owner": "franklin0205",
+      "repo": "xijian-releases",
+      "private": false,
+      "releaseType": "release"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "toolsets": {
+      "nsis": "1.2.1"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico",
+      "electronLanguages": [
+        "zh-CN",
+        "en-US"
+      ],
+      "signAndEditExecutable": true,
+      "signExecutable": false,
+      "artifactName": "Xijian-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "息间",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Xijian-Portable-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.healthcare-fitness",
+      "artifactName": "息间-${version}-macOS-${arch}.${ext}"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  }
+}
